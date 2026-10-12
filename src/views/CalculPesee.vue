@@ -391,11 +391,11 @@ async function charger() {
 }
 async function chargerConfigs() {
   const r = await supabase.from('pesee_config').select('*')
-  if (!r.error) configs.value = r.data || []
+  if (!r.error) configs.value = (r.data || []).map(c => ({ ...c, ...(c.extra || {}) }))
 }
 async function chargerHistorique() {
   const r = await supabase.from('pesees').select('*').order('created_at', { ascending: false }).limit(50)
-  if (!r.error) historique.value = r.data || []
+  if (!r.error) historique.value = (r.data || []).map(x => ({ ...x, ...(x.extra || {}) }))
 }
 onMounted(charger)
 
@@ -463,7 +463,7 @@ async function enregistrer() {
     ajust_excipient: ajustExc.value,
     apis: apisPayload()
   }
-  const r = await supabase.from('pesees').insert(payload)
+  const r = await supabase.from('pesees').insert({ extra: payload })
   enreg.value = false
   if (r.error) { erreur.value = r.error.message; return }
   message.value = 'Pesée enregistrée.'
