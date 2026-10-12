@@ -225,7 +225,7 @@ const pcProduitsFiltres = computed(() => {
 function libellePC(id) { const pr = produits.value.find(x => String(x.id) === String(id)); return pr ? (pr.code_pf + ' — ' + pr.designation) : ('#' + id) }
 async function chargerPC() {
   const r = await supabase.from('pesee_config').select('*')
-  if (!r.error) peseeConfigs.value = r.data || []
+  if (!r.error) peseeConfigs.value = (r.data || []).map(c => ({ ...c, ...(c.extra || {}) }))
 }
 function resetPC() { pcEditId.value = null; pcProduit.value = ''; pcRecherche.value = ''; pcTheoExc.value = null; pcDesignExc.value = ''; pcAjustExc.value = true; pcNbFrac.value = 1; pcApis.value = [pcNewAPI()] }
 function pcAddAPI() { pcApis.value.push(pcNewAPI()) }
@@ -254,9 +254,11 @@ async function enregistrerPC() {
     ajust_excipient: pcAjustExc.value,
     nb_fractions: (pcNbFrac.value != null && pcNbFrac.value >= 1) ? Math.floor(Number(pcNbFrac.value)) : 1
   }
+  const { produit_id, ...rest } = payload
+  const toSave = { produit_id, extra: rest }
   const r = pcEditId.value
-    ? await supabase.from('pesee_config').update(payload).eq('id', pcEditId.value)
-    : await supabase.from('pesee_config').upsert(payload, { onConflict: 'produit_id' })
+    ? await supabase.from('pesee_config').update(toSave).eq('id', pcEditId.value)
+    : await supabase.from('pesee_config').upsert(toSave, { onConflict: 'produit_id' })
   if (r.error) { erreur.value = r.error.message; return }
   erreur.value = ''; resetPC(); await chargerPC()
 }
